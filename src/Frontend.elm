@@ -32,6 +32,7 @@ init url key =
     ( { key = key
       , phrases = ( "", "", "" )
       , everyonesPhrases = []
+      , remaining = []
       , currentPhrase = ""
       , mode =
             if url.path == "/play" then
@@ -40,7 +41,7 @@ init url key =
             else
                 Types.EnterPhrases
       }
-    , Cmd.none
+    , Lamdera.sendToBackend ClientConnected
     )
 
 
@@ -84,7 +85,7 @@ update msg model =
             ( { model | currentPhrase = phrase }, Cmd.none )
 
         GetRandomPhrase ->
-            ( model, Random.generate GotRandomPhrase (getRandomPhrase model.everyonesPhrases) )
+            ( model, Random.generate GotRandomPhrase (getRandomPhrase model.remaining) )
 
         PhraseInput inputNumber newValue ->
             let
@@ -112,7 +113,7 @@ updateFromBackend msg model =
             ( model, Cmd.none )
 
         GotUpdatedPhrases phrases ->
-            ( { model | everyonesPhrases = phrases }, Cmd.none )
+            ( { model | remaining = phrases }, Cmd.none )
 
 
 view model =
@@ -132,11 +133,11 @@ view model =
 
 
 playView model =
-    [ Html.div []
+    [ Html.h2 []
         [ Html.text model.currentPhrase
-
         ]
-        , Html.button [Html.Events.onClick GetRandomPhrase] [Html.text "Skip"]
+    , Html.button [ Html.Events.onClick GetRandomPhrase ] [ Html.text "Skip" ]
+    , Html.pre [] [ Html.text (String.join "\n" model.remaining) ]
     ]
 
 
@@ -151,5 +152,5 @@ enterPhrasesView model =
         , Html.input [ Attr.value three, Html.Events.onInput (PhraseInput Types.Three) ] []
         ]
     , Html.button [ Html.Events.onClick SubmitPhrases ] [ Html.text "Submit" ]
-    , Html.pre [] [ Html.text (String.join "\n" model.everyonesPhrases) ]
+    , Html.pre [] [ Html.text (String.join "\n" model.remaining) ]
     ]

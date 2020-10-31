@@ -18,6 +18,7 @@ type alias FrontendModel =
     , everyonesPhrases : List String
     , mode : Mode
     , currentPhrase : String
+    , remaining : List String
     }
 
 
@@ -46,6 +47,7 @@ type FrontendMsg
 type ToBackend
     = NoOpToBackend
     | SavePhrases ( String, String, String )
+    | ClientConnected
 
 
 type BackendMsg

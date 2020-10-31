@@ -39,6 +39,9 @@ updateFromFrontend sessionId clientId msg model =
         NoOpToBackend ->
             ( model, Cmd.none )
 
+        ClientConnected ->
+            ( model, Lamdera.sendToFrontend clientId (GotUpdatedPhrases (Dict.values model.phrases |> List.concat)) )
+
         SavePhrases ( one, two, three ) ->
             let
                 updatedPhrases =
