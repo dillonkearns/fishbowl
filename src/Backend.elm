@@ -1,5 +1,6 @@
 module Backend exposing (..)
 
+import Dict exposing (Dict)
 import Html
 import Lamdera exposing (ClientId, SessionId)
 import Types exposing (..)
@@ -20,7 +21,7 @@ app =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( { phrases = [], mainClient = Nothing }
+    ( { phrases = Dict.empty, mainClient = Nothing }
     , Cmd.none
     )
 
@@ -41,6 +42,7 @@ updateFromFrontend sessionId clientId msg model =
         SavePhrases ( one, two, three ) ->
             let
                 updatedPhrases =
-                    one :: two :: three :: model.phrases
+                    model.phrases
+                        |> Dict.insert clientId [ one, two, three ]
             in
-            ( { model | phrases = updatedPhrases }, Lamdera.broadcast (GotUpdatedPhrases updatedPhrases) )
+            ( { model | phrases = updatedPhrases }, Lamdera.broadcast (GotUpdatedPhrases (Dict.values updatedPhrases |> List.concat)) )

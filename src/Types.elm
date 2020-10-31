@@ -2,6 +2,7 @@ module Types exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
+import Dict exposing (Dict)
 import Lamdera exposing (ClientId, SessionId)
 import Url exposing (Url)
 
@@ -14,7 +15,7 @@ type alias FrontendModel =
 
 
 type alias BackendModel =
-    { phrases : List String
+    { phrases : Dict ClientId (List String)
     , mainClient : Maybe ClientId
     }
 
