@@ -32,7 +32,7 @@ init url key =
       , phrases = ( "", "", "" )
       , everyonesPhrases = []
       , mode =
-            if url.path == "play" then
+            if url.path == "/play" then
                 Types.Play
 
             else
@@ -102,12 +102,25 @@ view model =
     in
     { title = ""
     , body =
-        [ Html.div [ Attr.style "text-align" "center", Attr.style "padding-top" "40px" ]
-            [ Html.input [ Attr.value one, Html.Events.onInput (PhraseInput Types.One) ] []
-            , Html.input [ Attr.value two, Html.Events.onInput (PhraseInput Types.Two) ] []
-            , Html.input [ Attr.value three, Html.Events.onInput (PhraseInput Types.Three) ] []
-            ]
-        , Html.button [ Html.Events.onClick SubmitPhrases ] [ Html.text "Submit" ]
-        , Html.pre [] [ Html.text (String.join "\n" model.everyonesPhrases) ]
-        ]
+        case model.mode of
+            Types.Play ->
+                [ Html.div [] [ Html.text "Play" ] ]
+
+            Types.EnterPhrases ->
+                enterPhrasesView model
     }
+
+
+enterPhrasesView model =
+    let
+        ( one, two, three ) =
+            model.phrases
+    in
+    [ Html.div [ Attr.style "text-align" "center", Attr.style "padding-top" "40px" ]
+        [ Html.input [ Attr.value one, Html.Events.onInput (PhraseInput Types.One) ] []
+        , Html.input [ Attr.value two, Html.Events.onInput (PhraseInput Types.Two) ] []
+        , Html.input [ Attr.value three, Html.Events.onInput (PhraseInput Types.Three) ] []
+        ]
+    , Html.button [ Html.Events.onClick SubmitPhrases ] [ Html.text "Submit" ]
+    , Html.pre [] [ Html.text (String.join "\n" model.everyonesPhrases) ]
+    ]
