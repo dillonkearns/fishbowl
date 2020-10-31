@@ -6,6 +6,7 @@ import Html
 import Html.Attributes as Attr
 import Html.Events
 import Lamdera
+import Random
 import Types exposing (..)
 import Url
 
@@ -31,6 +32,7 @@ init url key =
     ( { key = key
       , phrases = ( "", "", "" )
       , everyonesPhrases = []
+      , currentPhrase = ""
       , mode =
             if url.path == "/play" then
                 Types.Play
@@ -40,6 +42,18 @@ init url key =
       }
     , Cmd.none
     )
+
+
+getRandomPhrase : List String -> Random.Generator String
+getRandomPhrase phrases =
+    Random.int 0 (List.length phrases - 1)
+        |> Random.map
+            (\index ->
+                phrases
+                    |> List.drop index
+                    |> List.head
+                    |> Maybe.withDefault ""
+            )
 
 
 update : FrontendMsg -> Model -> ( Model, Cmd FrontendMsg )
@@ -65,6 +79,12 @@ update msg model =
 
         SubmitPhrases ->
             ( model, Lamdera.sendToBackend (SavePhrases model.phrases) )
+
+        GotRandomPhrase phrase ->
+            ( { model | currentPhrase = phrase }, Cmd.none )
+
+        GetRandomPhrase ->
+            ( model, Random.generate GotRandomPhrase (getRandomPhrase model.everyonesPhrases) )
 
         PhraseInput inputNumber newValue ->
             let
@@ -104,11 +124,20 @@ view model =
     , body =
         case model.mode of
             Types.Play ->
-                [ Html.div [] [ Html.text "Play" ] ]
+                playView model
 
             Types.EnterPhrases ->
                 enterPhrasesView model
     }
+
+
+playView model =
+    [ Html.div []
+        [ Html.text model.currentPhrase
+
+        ]
+        , Html.button [Html.Events.onClick GetRandomPhrase] [Html.text "Skip"]
+    ]
 
 
 enterPhrasesView model =

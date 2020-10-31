@@ -17,6 +17,7 @@ type alias FrontendModel =
     , phrases : ( String, String, String )
     , everyonesPhrases : List String
     , mode : Mode
+    , currentPhrase : String
     }
 
 
@@ -38,6 +39,8 @@ type FrontendMsg
     | NoOpFrontendMsg
     | PhraseInput InputField String
     | SubmitPhrases
+    | GetRandomPhrase
+    | GotRandomPhrase String
 
 
 type ToBackend
