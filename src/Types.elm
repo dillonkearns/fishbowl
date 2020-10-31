@@ -42,6 +42,7 @@ type FrontendMsg
     | SubmitPhrases
     | GetRandomPhrase
     | GotRandomPhrase String
+    | GuessedCorrectly
 
 
 type ToBackend

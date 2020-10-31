@@ -87,6 +87,14 @@ update msg model =
         GetRandomPhrase ->
             ( model, Random.generate GotRandomPhrase (getRandomPhrase model.remaining) )
 
+        GuessedCorrectly ->
+            let
+                updatedRemaining =
+                    model.remaining
+                        |> List.filter (\phrase -> phrase /= model.currentPhrase)
+            in
+            ( { model | remaining = updatedRemaining }, Random.generate GotRandomPhrase (getRandomPhrase updatedRemaining) )
+
         PhraseInput inputNumber newValue ->
             let
                 ( one, two, three ) =
@@ -136,7 +144,8 @@ playView model =
     [ Html.h2 []
         [ Html.text model.currentPhrase
         ]
-    , Html.button [ Html.Events.onClick GetRandomPhrase ] [ Html.text "Skip" ]
+    , Html.button [ Html.Events.onClick GuessedCorrectly ] [ Html.text "✅" ]
+    , Html.button [ Html.Events.onClick GetRandomPhrase ] [ Html.text "Start/Skip" ]
     , Html.pre [] [ Html.text (String.join "\n" model.remaining) ]
     ]
 
