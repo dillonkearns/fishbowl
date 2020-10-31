@@ -31,6 +31,12 @@ init url key =
     ( { key = key
       , phrases = ( "", "", "" )
       , everyonesPhrases = []
+      , mode =
+            if url.path == "play" then
+                Types.Play
+
+            else
+                Types.EnterPhrases
       }
     , Cmd.none
     )

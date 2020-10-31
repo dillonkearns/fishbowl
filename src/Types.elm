@@ -7,10 +7,16 @@ import Lamdera exposing (ClientId, SessionId)
 import Url exposing (Url)
 
 
+type Mode
+    = EnterPhrases
+    | Play
+
+
 type alias FrontendModel =
     { key : Key
     , phrases : ( String, String, String )
     , everyonesPhrases : List String
+    , mode : Mode
     }
 
 
