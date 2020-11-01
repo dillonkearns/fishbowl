@@ -3,6 +3,7 @@ module Backend exposing (..)
 import Dict exposing (Dict)
 import Html
 import Lamdera exposing (ClientId, SessionId)
+import Set
 import Types exposing (..)
 
 
@@ -21,7 +22,7 @@ app =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( { phrases = Dict.empty, mainClient = Nothing }
+    ( { phrases = Dict.empty, mainClient = Nothing, guessedPhrases = [] }
     , Cmd.none
     )
 
@@ -40,7 +41,16 @@ updateFromFrontend sessionId clientId msg model =
             ( model, Cmd.none )
 
         ClientConnected ->
-            ( model, Lamdera.sendToFrontend clientId (GotUpdatedPhrases (Dict.values model.phrases |> List.concat)) )
+            let
+                remainingPhrases =
+                    filterGuessed model.phrases model.guessedPhrases
+            in
+            ( model, Cmd.none )
+                |> sendRemainingGuesses
+
+        StartNewRound ->
+            ( { model | guessedPhrases = [] }, Cmd.none )
+                |> sendRemainingGuesses
 
         SavePhrases ( one, two, three ) ->
             let
@@ -48,4 +58,35 @@ updateFromFrontend sessionId clientId msg model =
                     model.phrases
                         |> Dict.insert clientId [ one, two, three ]
             in
-            ( { model | phrases = updatedPhrases }, Lamdera.broadcast (GotUpdatedPhrases (Dict.values updatedPhrases |> List.concat)) )
+            ( { model | phrases = updatedPhrases }, Cmd.none )
+                |> sendRemainingGuesses
+
+        CorrectGuessInRound guessedPhrase ->
+            let
+                updatedGuessed =
+                    guessedPhrase :: model.guessedPhrases
+
+                remainingPhrases =
+                    filterGuessed model.phrases updatedGuessed
+            in
+            ( { model | guessedPhrases = updatedGuessed }, Cmd.none )
+                |> sendRemainingGuesses
+
+
+sendRemainingGuesses ( model, cmd ) =
+    let
+        remainingPhrases =
+            filterGuessed model.phrases model.guessedPhrases
+    in
+    ( model, Cmd.batch [ cmd, Lamdera.broadcast (LatestRemainingPhrases remainingPhrases) ] )
+
+
+filterGuessed everyonesPhrases guessedPhrases =
+    let
+        guessedSet =
+            Set.fromList guessedPhrases
+    in
+    everyonesPhrases
+        |> Dict.values
+        |> List.concat
+        |> List.filter (\phrase -> not (Set.member phrase guessedSet))

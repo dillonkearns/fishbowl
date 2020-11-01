@@ -25,6 +25,7 @@ type alias FrontendModel =
 type alias BackendModel =
     { phrases : Dict ClientId (List String)
     , mainClient : Maybe ClientId
+    , guessedPhrases : List String
     }
 
 
@@ -43,12 +44,15 @@ type FrontendMsg
     | GetRandomPhrase
     | GotRandomPhrase String
     | GuessedCorrectly
+    | StartNewRoundClicked
 
 
 type ToBackend
     = NoOpToBackend
     | SavePhrases ( String, String, String )
     | ClientConnected
+    | CorrectGuessInRound String
+    | StartNewRound
 
 
 type BackendMsg
@@ -58,3 +62,4 @@ type BackendMsg
 type ToFrontend
     = NoOpToFrontend
     | GotUpdatedPhrases (List String)
+    | LatestRemainingPhrases (List String)

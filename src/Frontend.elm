@@ -87,13 +87,18 @@ update msg model =
         GetRandomPhrase ->
             ( model, Random.generate GotRandomPhrase (getRandomPhrase model.remaining) )
 
+        StartNewRoundClicked ->
+            ( model, Lamdera.sendToBackend StartNewRound )
+
         GuessedCorrectly ->
             let
                 updatedRemaining =
                     model.remaining
                         |> List.filter (\phrase -> phrase /= model.currentPhrase)
             in
-            ( { model | remaining = updatedRemaining }, Random.generate GotRandomPhrase (getRandomPhrase updatedRemaining) )
+            ( { model | remaining = updatedRemaining }
+            , Lamdera.sendToBackend (CorrectGuessInRound model.currentPhrase)
+            )
 
         PhraseInput inputNumber newValue ->
             let
@@ -123,6 +128,9 @@ updateFromBackend msg model =
         GotUpdatedPhrases phrases ->
             ( { model | remaining = phrases }, Cmd.none )
 
+        LatestRemainingPhrases phrases ->
+            ( { model | remaining = phrases }, Random.generate GotRandomPhrase (getRandomPhrase phrases) )
+
 
 view model =
     let
@@ -146,6 +154,7 @@ playView model =
         ]
     , Html.button [ Html.Events.onClick GuessedCorrectly ] [ Html.text "✅" ]
     , Html.button [ Html.Events.onClick GetRandomPhrase ] [ Html.text "Start/Skip" ]
+    , Html.button [ Html.Events.onClick StartNewRoundClicked ] [ Html.text "Round Complete" ]
     , Html.pre [] [ Html.text (String.join "\n" model.remaining) ]
     ]
 
