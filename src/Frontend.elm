@@ -2,10 +2,15 @@ module Frontend exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
-import Html
+import Form
+import Form.Field as Field
+import Form.FieldView as FieldView
+import Form.Validation as Validation
+import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events
 import Lamdera
+import PhrasesForm
 import Random
 import Types exposing (..)
 import Url
@@ -30,7 +35,6 @@ app =
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
     ( { key = key
-      , phrases = ( "", "", "" )
       , everyonesPhrases = []
       , remaining = []
       , currentPhrase = ""
@@ -40,6 +44,8 @@ init url key =
 
             else
                 Types.EnterPhrases
+      , formState = Form.init
+      , submitting = False
       }
     , Lamdera.sendToBackend ClientConnected
     )
@@ -78,11 +84,25 @@ update msg model =
         NoOpFrontendMsg ->
             ( model, Cmd.none )
 
-        SubmitPhrases ->
-            ( model, Lamdera.sendToBackend (SavePhrases model.phrases) )
+        OnSubmit submission ->
+            case submission.parsed of
+                Form.Valid _ ->
+                    ( { model | submitting = True }
+                    , Lamdera.sendToBackend (FormSubmission submission.fields)
+                    )
+
+                Form.Invalid _ _ ->
+                    ( model, Cmd.none )
+
+        FormMsg formMsg ->
+            let
+                ( updatedFormModel, cmd ) =
+                    Form.update formMsg model.formState
+            in
+            ( { model | formState = updatedFormModel }, cmd )
 
         GotRandomPhrase phrase ->
-            ( { model | currentPhrase = phrase }, Cmd.none )
+            ( { model | currentPhrase = phrase, submitting = False }, Cmd.none )
 
         GetRandomPhrase ->
             ( model, Random.generate GotRandomPhrase (getRandomPhrase model.remaining) )
@@ -100,24 +120,6 @@ update msg model =
             , Lamdera.sendToBackend (CorrectGuessInRound model.currentPhrase)
             )
 
-        PhraseInput inputNumber newValue ->
-            let
-                ( one, two, three ) =
-                    model.phrases
-
-                updatedInput =
-                    case inputNumber of
-                        Types.One ->
-                            ( newValue, two, three )
-
-                        Types.Two ->
-                            ( one, newValue, three )
-
-                        Types.Three ->
-                            ( one, two, newValue )
-            in
-            ( { model | phrases = updatedInput }, Cmd.none )
-
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
@@ -133,10 +135,6 @@ updateFromBackend msg model =
 
 
 view model =
-    let
-        ( one, two, three ) =
-            model.phrases
-    in
     { title = ""
     , body =
         case model.mode of
@@ -144,7 +142,18 @@ view model =
                 playView model
 
             Types.EnterPhrases ->
-                enterPhrasesView model
+                [ PhrasesForm.wordsForm
+                    |> Form.withOnSubmit OnSubmit
+                    |> Form.renderHtml "form"
+                        []
+                        -- TODO get rid of errorData argument (completely, or just for vanilla apps)
+                        (\_ -> Nothing)
+                        { submitting = model.submitting
+                        , state = model.formState
+                        }
+                        ()
+                    |> Html.map FormMsg
+                ]
     }
 
 
@@ -155,20 +164,5 @@ playView model =
     , Html.button [ Html.Events.onClick GuessedCorrectly ] [ Html.text "✅" ]
     , Html.button [ Html.Events.onClick GetRandomPhrase ] [ Html.text "Start/Skip" ]
     , Html.button [ Html.Events.onClick StartNewRoundClicked ] [ Html.text "Round Complete" ]
-    , Html.pre [] [ Html.text (String.join "\n" model.remaining) ]
-    ]
-
-
-enterPhrasesView model =
-    let
-        ( one, two, three ) =
-            model.phrases
-    in
-    [ Html.div [ Attr.style "text-align" "center", Attr.style "padding-top" "40px" ]
-        [ Html.input [ Attr.value one, Html.Events.onInput (PhraseInput Types.One) ] []
-        , Html.input [ Attr.value two, Html.Events.onInput (PhraseInput Types.Two) ] []
-        , Html.input [ Attr.value three, Html.Events.onInput (PhraseInput Types.Three) ] []
-        ]
-    , Html.button [ Html.Events.onClick SubmitPhrases ] [ Html.text "Submit" ]
     , Html.pre [] [ Html.text (String.join "\n" model.remaining) ]
     ]

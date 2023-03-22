@@ -3,7 +3,9 @@ module Types exposing (..)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
+import Form
 import Lamdera exposing (ClientId, SessionId)
+import PhrasesForm exposing (PhrasesForm)
 import Url exposing (Url)
 
 
@@ -14,11 +16,12 @@ type Mode
 
 type alias FrontendModel =
     { key : Key
-    , phrases : ( String, String, String )
     , everyonesPhrases : List String
     , mode : Mode
     , currentPhrase : String
     , remaining : List String
+    , formState : Form.Model
+    , submitting : Bool
     }
 
 
@@ -39,8 +42,8 @@ type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
     | NoOpFrontendMsg
-    | PhraseInput InputField String
-    | SubmitPhrases
+    | FormMsg (Form.Msg FrontendMsg)
+    | OnSubmit { fields : List ( String, String ), parsed : Form.Validated String PhrasesForm }
     | GetRandomPhrase
     | GotRandomPhrase String
     | GuessedCorrectly
@@ -49,7 +52,7 @@ type FrontendMsg
 
 type ToBackend
     = NoOpToBackend
-    | SavePhrases ( String, String, String )
+    | FormSubmission (List ( String, String ))
     | ClientConnected
     | CorrectGuessInRound String
     | StartNewRound

@@ -1,8 +1,11 @@
 module Backend exposing (..)
 
 import Dict exposing (Dict)
+import Form
+import Form.Handler
 import Html
 import Lamdera exposing (ClientId, SessionId)
+import PhrasesForm exposing (PhrasesForm)
 import Set
 import Types exposing (..)
 
@@ -34,6 +37,15 @@ update msg model =
             ( model, Cmd.none )
 
 
+formHandler : Form.Handler.Handler String Submission
+formHandler =
+    Form.Handler.init Phrases PhrasesForm.wordsForm
+
+
+type Submission
+    = Phrases PhrasesForm.PhrasesForm
+
+
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontend sessionId clientId msg model =
     case msg of
@@ -52,14 +64,19 @@ updateFromFrontend sessionId clientId msg model =
             ( { model | guessedPhrases = [] }, Cmd.none )
                 |> sendRemainingGuesses
 
-        SavePhrases ( one, two, three ) ->
-            let
-                updatedPhrases =
-                    model.phrases
-                        |> Dict.insert clientId [ one, two, three ]
-            in
-            ( { model | phrases = updatedPhrases }, Cmd.none )
-                |> sendRemainingGuesses
+        FormSubmission fields ->
+            case Form.Handler.run fields formHandler of
+                Form.Valid (Phrases { one, two, three }) ->
+                    let
+                        updatedPhrases =
+                            model.phrases
+                                |> Dict.insert clientId [ one, two, three ]
+                    in
+                    ( { model | phrases = updatedPhrases }, Cmd.none )
+                        |> sendRemainingGuesses
+
+                Form.Invalid _ errors ->
+                    ( model, Cmd.none )
 
         CorrectGuessInRound guessedPhrase ->
             let
